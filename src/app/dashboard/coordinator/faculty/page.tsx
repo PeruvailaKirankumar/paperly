@@ -12,11 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { 
-  Users, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  Users,
+  Plus,
+  Edit,
+  Trash2,
   Mail,
   Search,
   UserPlus,
@@ -37,8 +37,8 @@ import {
 const mockFaculty = [
   {
     id: '1',
-    name: 'Dr. Sarah Johnson',
-    email: 'sarah.johnson@university.edu',
+    name: 'Deva Chandan',
+    email: 'deva.chandan@klu.ac.in',
     phone: '+1 234-567-8901',
     department: 'Computer Science',
     designation: 'Professor',
@@ -54,8 +54,8 @@ const mockFaculty = [
   },
   {
     id: '2',
-    name: 'Prof. John Wilson',
-    email: 'john.wilson@university.edu',
+    name: 'Kiran P',
+    email: 'kiran.p@klu.ac.in',
     phone: '+1 234-567-8902',
     department: 'Computer Science',
     designation: 'Associate Professor',
@@ -68,40 +68,6 @@ const mockFaculty = [
     joinDate: '2024-02-01',
     office: 'CS-205',
     availability: 'busy'
-  },
-  {
-    id: '3',
-    name: 'Dr. Emily Chen',
-    email: 'emily.chen@university.edu',
-    phone: '+1 234-567-8903',
-    department: 'Computer Science',
-    designation: 'Assistant Professor',
-    experience: '8 years',
-    specialization: ['Machine Learning', 'Data Science', 'Python'],
-    assignedSubjects: ['Machine Learning', 'Data Science'],
-    coursesHandling: 2,
-    papersGenerated: 6,
-    status: 'active',
-    joinDate: '2024-03-01',
-    office: 'CS-301',
-    availability: 'available'
-  },
-  {
-    id: '4',
-    name: 'Prof. Michael Brown',
-    email: 'michael.brown@university.edu',
-    phone: '+1 234-567-8904',
-    department: 'Computer Science',
-    designation: 'Lecturer',
-    experience: '5 years',
-    specialization: ['Networks', 'Cybersecurity', 'Operating Systems'],
-    assignedSubjects: [],
-    coursesHandling: 0,
-    papersGenerated: 0,
-    status: 'inactive',
-    joinDate: '2024-02-15',
-    office: 'CS-105',
-    availability: 'available'
   }
 ];
 
@@ -272,7 +238,7 @@ function AssignSubjectsDialog({ faculty }: { faculty: any }) {
             {mockSubjects.map((subject) => (
               <div key={subject.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <Checkbox 
+                  <Checkbox
                     id={subject.id}
                     checked={selectedSubjects.includes(subject.name)}
                     onCheckedChange={(checked: boolean) => {
@@ -339,18 +305,18 @@ export default function FacultyAssignmentPage() {
 
   const filteredFaculty = mockFaculty.filter(faculty => {
     const matchesSearch = faculty.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         faculty.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         faculty.specialization.some(spec => spec.toLowerCase().includes(searchTerm.toLowerCase()));
+      faculty.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      faculty.specialization.some(spec => spec.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || faculty.status === statusFilter;
     const matchesDesignation = designationFilter === 'all' || faculty.designation.toLowerCase().includes(designationFilter.toLowerCase());
-    
+
     return matchesSearch && matchesStatus && matchesDesignation;
   });
 
   const totalFaculty = mockFaculty.length;
   const activeFaculty = mockFaculty.filter(f => f.status === 'active').length;
   const totalSubjects = mockSubjects.length;
-  const assignedSubjects = mockSubjects.filter(s => 
+  const assignedSubjects = mockSubjects.filter(s =>
     mockFaculty.some(f => f.assignedSubjects.includes(s.name))
   ).length;
 

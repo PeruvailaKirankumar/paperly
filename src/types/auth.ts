@@ -1,4 +1,4 @@
-export type UserRole = 'hod' | 'coordinator' | 'faculty';
+export type UserRole = 'hod' | 'coordinator' | 'faculty' | 'student';
 
 export interface User {
   id: string;
@@ -7,6 +7,8 @@ export interface User {
   role: UserRole;
   department?: string;
   subjects?: string[];
+  studentId?: string; // For students
+  enrolledSubjects?: string[]; // For students
 }
 
 export interface AuthState {
@@ -14,5 +16,6 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string, role: UserRole) => Promise<boolean>;
-  logout: () => void;
+  loginWithGoogle: (role: UserRole) => Promise<boolean>;
+  logout: () => Promise<void>;
 }

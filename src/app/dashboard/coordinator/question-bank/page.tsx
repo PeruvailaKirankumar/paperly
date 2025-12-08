@@ -12,11 +12,11 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  BookOpen, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  BookOpen,
+  Plus,
+  Edit,
+  Trash2,
   Eye,
   Search,
   Filter,
@@ -72,7 +72,7 @@ const mockQuestions = [
     bloomLevel: 'apply',
     difficulty: 'easy',
     keywords: ['stack', 'queue', 'implementation', 'arrays'],
-    createdBy: 'Prof. Sarah Johnson',
+    createdBy: 'Prof. Deva Chandan',
     createdDate: '2024-03-10',
     lastUsed: '2024-03-12',
     usageCount: 7,
@@ -88,7 +88,7 @@ const mockQuestions = [
     bloomLevel: 'create',
     difficulty: 'hard',
     keywords: ['hash table', 'collision resolution', 'chaining'],
-    createdBy: 'Dr. John Wilson',
+    createdBy: 'Dr. Kiran P',
     createdDate: '2024-03-08',
     lastUsed: '2024-03-10',
     usageCount: 2,
@@ -228,8 +228,8 @@ function AddQuestionDialog() {
 
           <div>
             <Label htmlFor="questionText">Question Text</Label>
-            <Textarea 
-              id="questionText" 
+            <Textarea
+              id="questionText"
               placeholder="Enter the question text here..."
               rows={4}
             />
@@ -296,12 +296,12 @@ export default function QuestionBankPage() {
 
   const filteredQuestions = mockQuestions.filter(question => {
     const matchesSearch = question.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         question.topic.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         question.keywords.some(keyword => keyword.toLowerCase().includes(searchTerm.toLowerCase()));
+      question.topic.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      question.keywords.some(keyword => keyword.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesSubject = subjectFilter === 'all' || question.subject === subjectFilter;
     const matchesDifficulty = difficultyFilter === 'all' || question.difficulty === difficultyFilter;
     const matchesBloom = bloomFilter === 'all' || question.bloomLevel === bloomFilter;
-    
+
     return matchesSearch && matchesSubject && matchesDifficulty && matchesBloom;
   });
 

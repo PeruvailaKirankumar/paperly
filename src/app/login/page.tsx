@@ -11,23 +11,64 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Copy, FileText } from 'lucide-react';
+import { ArrowLeft, Copy, FileText, ShieldCheck, AlertCircle, GraduationCap, Chrome } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('faculty');
+  const [role, setRole] = useState<UserRole>('student');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
+
+  // Validate @klu.ac.in domain
+  const validateEmail = (email: string): boolean => {
+    return email.toLowerCase().endsWith('@klu.ac.in');
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    setError('');
+
+    try {
+      const success = await loginWithGoogle(role);
+      if (success) {
+        const dashboardRoutes = {
+          hod: '/dashboard/hod',
+          coordinator: '/dashboard/coordinator',
+          faculty: '/dashboard/faculty',
+          student: '/dashboard/student'
+        };
+        router.push(dashboardRoutes[role]);
+      } else {
+        setError('Google sign-in was cancelled or failed.');
+      }
+    } catch (err: any) {
+      if (err.message?.includes('@klu.ac.in')) {
+        setError('Please use your KLU email address (@klu.ac.in)');
+      } else {
+        setError('Google sign-in failed. Please try again.');
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Validate KLU email domain
+    if (!validateEmail(email)) {
+      setError('Please use your KLU email address (@klu.ac.in)');
+      setLoading(false);
+      return;
+    }
 
     try {
       const success = await login(email, password, role);
@@ -36,7 +77,8 @@ export default function LoginPage() {
         const dashboardRoutes = {
           hod: '/dashboard/hod',
           coordinator: '/dashboard/coordinator',
-          faculty: '/dashboard/faculty'
+          faculty: '/dashboard/faculty',
+          student: '/dashboard/student'
         };
         router.push(dashboardRoutes[role]);
       } else {
@@ -62,9 +104,10 @@ export default function LoginPage() {
   };
 
   const demoCredentials = [
-    { role: 'HoD', email: 'hod@university.edu', password: 'hod123', roleValue: 'hod' as UserRole, color: 'bg-red-50 border-red-200' },
-    { role: 'Course Coordinator', email: 'coordinator@university.edu', password: 'coord123', roleValue: 'coordinator' as UserRole, color: 'bg-blue-50 border-blue-200' },
-    { role: 'Faculty', email: 'faculty@university.edu', password: 'faculty123', roleValue: 'faculty' as UserRole, color: 'bg-green-50 border-green-200' }
+    { role: 'Student', email: 'student@klu.ac.in', password: 'student123', roleValue: 'student' as UserRole, color: 'bg-purple-50 border-purple-200' },
+    { role: 'Faculty', email: 'faculty@klu.ac.in', password: 'faculty123', roleValue: 'faculty' as UserRole, color: 'bg-green-50 border-green-200' },
+    { role: 'Course Coordinator', email: 'coordinator@klu.ac.in', password: 'coord123', roleValue: 'coordinator' as UserRole, color: 'bg-blue-50 border-blue-200' },
+    { role: 'HoD', email: 'hod@klu.ac.in', password: 'hod123', roleValue: 'hod' as UserRole, color: 'bg-red-50 border-red-200' }
   ];
 
   return (
@@ -83,14 +126,21 @@ export default function LoginPage() {
         <Card className="border-0 shadow-xl">
           <CardHeader className="space-y-1 text-center">
             <div className="flex items-center justify-center mb-2">
-              <FileText className="h-8 w-8 text-blue-600 mr-2" />
-              <CardTitle className="text-2xl font-bold">
-                Paperly
-              </CardTitle>
+              <GraduationCap className="h-10 w-10 text-blue-600 mr-2" />
+              <div>
+                <CardTitle className="text-2xl font-bold">
+                  Paperly
+                </CardTitle>
+                <p className="text-xs text-gray-500 mt-1">KL University</p>
+              </div>
             </div>
             <CardDescription>
-              Question Paper Generation System
+              Exam Management & Question Paper Generation
             </CardDescription>
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <ShieldCheck className="h-4 w-4 text-green-600" />
+              <span className="text-xs text-gray-600">Secure Login with @klu.ac.in</span>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -101,23 +151,31 @@ export default function LoginPage() {
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="hod">Head of Department</SelectItem>
-                    <SelectItem value="coordinator">Course Coordinator</SelectItem>
+                    <SelectItem value="student">Student</SelectItem>
                     <SelectItem value="faculty">Faculty</SelectItem>
+                    <SelectItem value="coordinator">Course Coordinator</SelectItem>
+                    <SelectItem value="hod">Head of Department</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">KLU Email Address</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder="yourname@klu.ac.in"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className={email && !validateEmail(email) ? 'border-red-500' : ''}
                 />
+                {email && !validateEmail(email) && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    <span>Must be a @klu.ac.in email address</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -139,6 +197,36 @@ export default function LoginPage() {
               <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
                 {loading ? 'Signing In...' : 'Sign In'}
               </Button>
+
+              {role === 'student' && (
+                <>
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleGoogleSignIn}
+                    disabled={googleLoading || loading}
+                  >
+                    {googleLoading ? (
+                      'Signing in with Google...'
+                    ) : (
+                      <>
+                        <Chrome className="h-5 w-5 mr-2" />
+                        Sign in with Google
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
             </form>
           </CardContent>
         </Card>
@@ -146,10 +234,10 @@ export default function LoginPage() {
         <Card className="border-0 shadow-xl">
           <CardHeader>
             <CardTitle className="text-lg flex items-center">
-              🚀 Demo Credentials
+              🚀 Test Accounts
             </CardTitle>
             <CardDescription>
-              Click "Use" to auto-fill credentials or copy them manually
+              Faculty/HOD/Coordinator: Use email/password. Students: Sign in with KLU Google account.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

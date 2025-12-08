@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layouts/dashboard-layout';
 import { ProtectedRoute } from '@/lib/auth/protected-route';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,10 +12,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileUpload } from '@/components/ui/file-upload';
-import { 
-  Upload, 
-  FileText, 
-  Trash2, 
+import {
+  Upload,
+  FileText,
+  Trash2,
   Eye,
   Download,
   FolderOpen,
@@ -26,67 +26,32 @@ import {
   Settings,
   BookOpen,
   Zap,
-  Users
+  Users,
+  Loader2,
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
+import { apiClient } from '@/lib/api';
 
-// Mock context files data
-const mockContextFiles = [
-  {
-    id: '1',
-    name: 'DS_Syllabus_2024.pdf',
-    type: 'syllabus',
-    subject: 'Data Structures',
-    uploadDate: '2024-03-01',
-    size: '2.3 MB',
-    uploadedBy: 'Prof. Sarah Johnson',
-    status: 'processed',
-    vectorCount: 145
-  },
-  {
-    id: '2',
-    name: 'Previous_Papers_DS.pdf',
-    type: 'reference',
-    subject: 'Data Structures',
-    uploadDate: '2024-02-28',
-    size: '5.7 MB',
-    uploadedBy: 'Prof. Sarah Johnson',
-    status: 'processing',
-    vectorCount: 0
-  },
-  {
-    id: '3',
-    name: 'Course_Outcomes_DB.docx',
-    type: 'outcomes',
-    subject: 'Database Systems',
-    uploadDate: '2024-02-25',
-    size: '1.1 MB',
-    uploadedBy: 'Prof. Sarah Johnson',
-    status: 'processed',
-    vectorCount: 89
-  },
-  {
-    id: '4',
-    name: 'Reference_Book_Algorithms.pdf',
-    type: 'textbook',
-    subject: 'Algorithms',
-    uploadDate: '2024-02-20',
-    size: '15.2 MB',
-    uploadedBy: 'Prof. Sarah Johnson',
-    status: 'processed',
-    vectorCount: 450
-  },
-  {
-    id: '5',
-    name: 'Lab_Manual_Web_Dev.pdf',
-    type: 'manual',
-    subject: 'Web Development',
-    uploadDate: '2024-02-15',
-    size: '3.8 MB',
-    uploadedBy: 'Prof. Sarah Johnson',
-    status: 'failed',
-    vectorCount: 0
-  }
-];
+interface ContextFile {
+  document_id: string;
+  filename: string;
+  file_type: string;
+  num_chunks: number;
+  uploadDate?: string;
+  size?: string;
+  uploadedBy?: string;
+  status?: 'processed' | 'processing' | 'failed';
+  subject?: string;
+  type?: string;
+}
+
+interface SystemStats {
+  num_uploaded_documents: number;
+  num_indexed_chunks: number;
+  has_vector_store: boolean;
+  supported_formats: string[];
+}
 
 const fileTypeConfig = {
   syllabus: { color: 'bg-blue-100 text-blue-800', label: 'Syllabus' },
@@ -130,6 +95,12 @@ function CoordinatorSidebar() {
           </a>
         </Button>
         <Button variant="ghost" className="w-full justify-start" asChild>
+          <a href="/dashboard/coordinator/lessons">
+            <FileText className="mr-2 h-4 w-4" />
+            Lessons & Units
+          </a>
+        </Button>
+        <Button variant="ghost" className="w-full justify-start" asChild>
           <a href="/dashboard/coordinator/faculty">
             <Users className="mr-2 h-4 w-4" />
             Faculty Assignment
@@ -140,12 +111,39 @@ function CoordinatorSidebar() {
   );
 }
 
-function UploadContextDialog() {
+function UploadContextDialog({ onUploadComplete }: { onUploadComplete: () => void }) {
   const [open, setOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [courseStructure, setCourseStructure] = useState<any>({});
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState('');
 
-  const handleFileUpload = (files: File[]) => {
-    console.log('Uploading files:', files);
-    // Handle file upload logic here
+  useEffect(() => {
+    const fetchCourseStructure = async () => {
+      try {
+        const result = await apiClient.getFullCourseStructure();
+        if (result.data) {
+          setCourseStructure(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch course structure:', error);
+      }
+    };
+    fetchCourseStructure();
+  }, []);
+
+  const handleFileUpload = async (files: File[]) => {
+    setIsUploading(true);
+    try {
+      // The FileUpload component already handles individual uploads
+      // We just need to trigger a refresh when complete
+      onUploadComplete();
+    } catch (error) {
+      console.error('Upload error:', error);
+    } finally {
+      setIsUploading(false);
+      setOpen(false);
+    }
   };
 
   return (
@@ -167,46 +165,87 @@ function UploadContextDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="subject">Subject</Label>
-              <Select>
+              <Select value={selectedSubject} onValueChange={(value) => setSelectedSubject(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select subject" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ds">Data Structures</SelectItem>
-                  <SelectItem value="db">Database Systems</SelectItem>
-                  <SelectItem value="algo">Algorithms</SelectItem>
-                  <SelectItem value="web">Web Development</SelectItem>
+                  {Object.values(courseStructure).map((subject: any) => (
+                    <SelectItem key={subject.id} value={subject.name}>
+                      {subject.code} - {subject.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="fileType">File Type</Label>
-              <Select>
+              <Label htmlFor="unit">Unit (Optional)</Label>
+              <Select value={selectedUnit} onValueChange={(value) => setSelectedUnit(value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder="Select unit (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="syllabus">Syllabus</SelectItem>
-                  <SelectItem value="reference">Reference Material</SelectItem>
-                  <SelectItem value="outcomes">Course Outcomes</SelectItem>
-                  <SelectItem value="textbook">Textbook</SelectItem>
-                  <SelectItem value="manual">Lab Manual</SelectItem>
-                  <SelectItem value="notes">Lecture Notes</SelectItem>
+                  {selectedSubject && Object.values(courseStructure)
+                    .find((subject: any) => subject.name === selectedSubject)
+                    ?.units.map((unit: any) => (
+                      <SelectItem key={unit.id} value={unit.name}>
+                        Unit {unit.order}: {unit.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
+          <div>
+            <Label htmlFor="fileType">File Type</Label>
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="syllabus">Syllabus</SelectItem>
+                <SelectItem value="reference">Reference Material</SelectItem>
+                <SelectItem value="outcomes">Course Outcomes</SelectItem>
+                <SelectItem value="textbook">Textbook</SelectItem>
+                <SelectItem value="manual">Lab Manual</SelectItem>
+                <SelectItem value="notes">Lecture Notes</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedSubject && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Selected:</strong> {selectedSubject}
+                {selectedUnit && ` → ${selectedUnit}`}
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                Files will be associated with this course structure for better question generation context.
+              </p>
+            </div>
+          )}
 
           <FileUpload
             onUpload={handleFileUpload}
+            onUploadComplete={onUploadComplete}
             acceptedFileTypes=".pdf,.doc,.docx,.ppt,.pptx,.txt"
             maxFileSize={50}
             multiple={true}
           />
         </div>
         <div className="flex justify-end space-x-2">
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={() => setOpen(false)}>Upload Files</Button>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isUploading}>
+            Cancel
+          </Button>
+          <Button onClick={() => setOpen(false)} disabled={isUploading}>
+            {isUploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              'Done'
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -217,6 +256,80 @@ export default function RAGContextPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [documents, setDocuments] = useState<ContextFile[]>([]);
+  const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Fetch documents
+      const documentsResult = await apiClient.getDocuments();
+      if (documentsResult.error) {
+        setError(documentsResult.error);
+      } else if (documentsResult.data) {
+        const processedDocs = documentsResult.data.map(doc => ({
+          ...doc,
+          uploadDate: new Date().toISOString().split('T')[0], // Default to today
+          size: `${(Math.random() * 10 + 1).toFixed(1)} MB`, // Mock size for now
+          uploadedBy: 'Current User', // Mock user for now
+          status: 'processed' as const,
+          subject: 'General', // Default subject
+          type: 'reference' // Default type
+        }));
+        setDocuments(processedDocs);
+      }
+
+      // Fetch system stats
+      const statsResult = await apiClient.getStats();
+      if (statsResult.error) {
+        console.error('Stats error:', statsResult.error);
+      } else if (statsResult.data) {
+        setSystemStats(statsResult.data);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleDeleteDocument = async (documentId: string) => {
+    try {
+      const result = await apiClient.deleteDocument(documentId);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        // Refresh the documents list
+        fetchData();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete document');
+    }
+  };
+
+  const handleClearAllDocuments = async () => {
+    if (confirm('Are you sure you want to delete all documents? This action cannot be undone.')) {
+      try {
+        const result = await apiClient.clearAllDocuments();
+        if (result.error) {
+          setError(result.error);
+        } else {
+          // Refresh the documents list
+          fetchData();
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to clear documents');
+      }
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -236,19 +349,19 @@ export default function RAGContextPage() {
     return <Badge className={`${config.color} hover:${config.color}`}>{config.label}</Badge>;
   };
 
-  const filteredFiles = mockContextFiles.filter(file => {
-    const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         file.subject.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredFiles = documents.filter(file => {
+    const matchesSearch = file.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (file.subject && file.subject.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesSubject = subjectFilter === 'all' || file.subject === subjectFilter;
     const matchesType = typeFilter === 'all' || file.type === typeFilter;
-    
+
     return matchesSearch && matchesSubject && matchesType;
   });
 
-  const totalVectors = mockContextFiles.reduce((sum, file) => sum + file.vectorCount, 0);
-  const processedFiles = mockContextFiles.filter(file => file.status === 'processed').length;
-  const totalSize = mockContextFiles.reduce((sum, file) => {
-    const sizeInMB = parseFloat(file.size.replace(' MB', ''));
+  const totalVectors = documents.reduce((sum, file) => sum + file.num_chunks, 0);
+  const processedFiles = documents.filter(file => file.status === 'processed').length;
+  const totalSize = documents.reduce((sum, file) => {
+    const sizeInMB = file.size ? parseFloat(file.size.replace(' MB', '')) : 0;
     return sum + sizeInMB;
   }, 0);
 
@@ -264,18 +377,39 @@ export default function RAGContextPage() {
                 Upload and manage context files for AI-powered question generation
               </p>
             </div>
-            <UploadContextDialog />
+            <UploadContextDialog onUploadComplete={fetchData} />
           </div>
+
+          {/* Error Alert */}
+          {error && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <AlertCircle className="h-5 w-5 text-red-500" />
+                  <span className="text-red-700">{error}</span>
+                  <Button variant="outline" size="sm" onClick={fetchData} className="ml-auto">
+                    Retry
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Files</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                )}
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{mockContextFiles.length}</div>
+                <div className="text-2xl font-bold">
+                  {isLoading ? '...' : documents.length}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Context documents
                 </p>
@@ -285,10 +419,16 @@ export default function RAGContextPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Processed Files</CardTitle>
-                <Upload className="h-4 w-4 text-muted-foreground" />
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                )}
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{processedFiles}</div>
+                <div className="text-2xl font-bold">
+                  {isLoading ? '...' : processedFiles}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Ready for RAG
                 </p>
@@ -298,10 +438,16 @@ export default function RAGContextPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Vector Count</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                ) : (
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                )}
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalVectors.toLocaleString()}</div>
+                <div className="text-2xl font-bold">
+                  {isLoading ? '...' : totalVectors.toLocaleString()}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Embedding vectors
                 </p>
@@ -311,10 +457,16 @@ export default function RAGContextPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Size</CardTitle>
-                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                ) : (
+                  <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                )}
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalSize.toFixed(1)} MB</div>
+                <div className="text-2xl font-bold">
+                  {isLoading ? '...' : totalSize.toFixed(1)} MB
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Storage used
                 </p>
@@ -387,42 +539,77 @@ export default function RAGContextPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredFiles.map((file) => (
-                      <TableRow key={file.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{file.name}</div>
-                            <div className="text-sm text-gray-500">by {file.uploadedBy}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{file.subject}</TableCell>
-                        <TableCell>{getTypeBadge(file.type)}</TableCell>
-                        <TableCell>{file.uploadDate}</TableCell>
-                        <TableCell>{file.size}</TableCell>
-                        <TableCell>
-                          {file.vectorCount > 0 ? file.vectorCount.toLocaleString() : '-'}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(file.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" className="text-red-600">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                          <p className="text-gray-500">Loading documents...</p>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : filteredFiles.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                          No documents found. Upload your first context files to get started!
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredFiles.map((file) => (
+                        <TableRow key={file.document_id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{file.filename}</div>
+                              <div className="text-sm text-gray-500">
+                                {file.uploadedBy ? `by ${file.uploadedBy}` : ''}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{file.subject || 'General'}</TableCell>
+                          <TableCell>{getTypeBadge(file.type || 'reference')}</TableCell>
+                          <TableCell>{file.uploadDate || 'N/A'}</TableCell>
+                          <TableCell>{file.size || 'N/A'}</TableCell>
+                          <TableCell>
+                            {file.num_chunks > 0 ? file.num_chunks.toLocaleString() : '-'}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(file.status || 'processed')}</TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button variant="outline" size="sm" disabled>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="outline" size="sm" disabled>
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => handleDeleteDocument(file.document_id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
             </CardContent>
           </Card>
+
+          {/* Actions */}
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              className="text-red-600 hover:text-red-700"
+              onClick={handleClearAllDocuments}
+              disabled={isLoading || documents.length === 0}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Clear All Documents
+            </Button>
+          </div>
 
           {/* Processing Status and Analytics */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -434,9 +621,9 @@ export default function RAGContextPage() {
               <CardContent>
                 <div className="space-y-4">
                   {['processed', 'processing', 'failed'].map(status => {
-                    const count = mockContextFiles.filter(file => file.status === status).length;
-                    const percentage = (count / mockContextFiles.length) * 100;
-                    
+                    const count = documents.filter(file => file.status === status).length;
+                    const percentage = documents.length > 0 ? (count / documents.length) * 100 : 0;
+
                     return (
                       <div key={status} className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
@@ -453,6 +640,11 @@ export default function RAGContextPage() {
                       </div>
                     );
                   })}
+                  {documents.length === 0 && (
+                    <div className="text-center text-gray-500 py-4">
+                      No documents uploaded yet
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -465,14 +657,15 @@ export default function RAGContextPage() {
               <CardContent>
                 <div className="space-y-4">
                   {Object.entries(
-                    mockContextFiles.reduce((acc, file) => {
-                      acc[file.type] = (acc[file.type] || 0) + 1;
+                    documents.reduce((acc, file) => {
+                      const type = file.type || 'reference';
+                      acc[type] = (acc[type] || 0) + 1;
                       return acc;
                     }, {} as Record<string, number>)
                   ).map(([type, count]) => {
-                    const percentage = (count / mockContextFiles.length) * 100;
-                    const config = fileTypeConfig[type as keyof typeof fileTypeConfig];
-                    
+                    const percentage = documents.length > 0 ? (count / documents.length) * 100 : 0;
+                    const config = fileTypeConfig[type as keyof typeof fileTypeConfig] || fileTypeConfig.reference;
+
                     return (
                       <div key={type} className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
@@ -487,6 +680,11 @@ export default function RAGContextPage() {
                       </div>
                     );
                   })}
+                  {documents.length === 0 && (
+                    <div className="text-center text-gray-500 py-4">
+                      No documents uploaded yet
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

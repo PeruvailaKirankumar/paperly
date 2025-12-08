@@ -2,38 +2,43 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole, AuthState } from '@/types/auth';
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signOut as firebaseSignOut
+} from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase/config';
 
-// Hardcoded test users for demo
-const TEST_USERS = [
+// Mock users for faculty, HOD, and coordinator (no Firebase auth required)
+const MOCK_USERS = [
   {
-    id: '1',
-    email: 'hod@university.edu',
+    id: 'hod-001',
+    email: 'hod@klu.ac.in',
     name: 'Dr. John Smith',
     role: 'hod' as UserRole,
     department: 'Computer Science',
     password: 'hod123'
   },
   {
-    id: '2',
-    email: 'coordinator@university.edu',
-    name: 'Prof. Sarah Johnson',
+    id: 'coord-001',
+    email: 'coordinator@klu.ac.in',
+    name: 'Prof. Deva Chandan',
     role: 'coordinator' as UserRole,
     department: 'Computer Science',
     subjects: ['Data Structures', 'Algorithms', 'Database Systems'],
     password: 'coord123'
   },
-  {
-    id: '3',
-    email: 'faculty@university.edu',
-    name: 'Dr. Michael Brown',
-    role: 'faculty' as UserRole,
-    department: 'Computer Science',
-    subjects: ['Web Development', 'Mobile App Development'],
-    password: 'faculty123'
-  }
 ];
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
+const googleProvider = new GoogleAuthProvider();
+
+// Configure Google provider to only allow @klu.ac.in domain
+googleProvider.setCustomParameters({
+  hd: 'klu.ac.in' // Hosted domain parameter
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -41,47 +46,177 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored auth data on mount
-    try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
+    // Check for stored mock user (faculty/hod/coordinator)
+    const storedUser = localStorage.getItem('mockUser');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
+        setIsLoading(false);
+        return;
+      } catch (error) {
+        localStorage.removeItem('mockUser');
       }
-    } catch (error) {
-      console.error('Error parsing stored user data:', error);
-      localStorage.removeItem('user');
-    } finally {
-      setIsLoading(false);
     }
+
+    // Listen to Firebase auth state changes (for students only)
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Validate email domain
+        if (!firebaseUser.email?.endsWith('@klu.ac.in')) {
+          await firebaseSignOut(auth);
+          setUser(null);
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
+
+        // Get user data from Firestore
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const appUser: User = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email!,
+              name: userData.name || firebaseUser.displayName || 'User',
+              role: 'student' as UserRole,
+              department: userData.department,
+              studentId: userData.studentId,
+              enrolledSubjects: userData.enrolledSubjects
+            };
+            setUser(appUser);
+            setIsAuthenticated(true);
+          } else {
+            // User document doesn't exist, might be new user
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, password: string, role: UserRole): Promise<boolean> => {
-    // Find user in test data
-    const testUser = TEST_USERS.find(
-      u => u.email === email && u.password === password && u.role === role
-    );
+    try {
+      // Validate KLU email domain
+      if (!email.toLowerCase().endsWith('@klu.ac.in')) {
+        throw new Error('Please use your KLU email address (@klu.ac.in)');
+      }
 
-    if (testUser) {
-      const { password: _, ...userWithoutPassword } = testUser;
-      setUser(userWithoutPassword);
-      setIsAuthenticated(true);
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-      return true;
+      // For faculty, hod, coordinator - use mock authentication
+      if (role !== 'student') {
+        const mockUser = MOCK_USERS.find(
+          u => u.email === email && u.password === password && u.role === role
+        );
+
+        if (mockUser) {
+          const { password: _, ...userWithoutPassword } = mockUser;
+          setUser(userWithoutPassword);
+          setIsAuthenticated(true);
+          localStorage.setItem('mockUser', JSON.stringify(userWithoutPassword));
+          return true;
+        }
+        return false;
+      }
+
+      // For students - this would use Firebase Auth, but we'll keep it simple
+      // Students should use Google Sign-In instead
+      return false;
+    } catch (error: any) {
+      console.error('Login error:', error);
+      return false;
     }
-    
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('user');
+  const loginWithGoogle = async (role: UserRole): Promise<boolean> => {
+    try {
+      // Google Sign-In only for students
+      if (role !== 'student') {
+        throw new Error('Google Sign-In is only available for students');
+      }
+
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+
+      // Validate email domain
+      if (!firebaseUser.email?.endsWith('@klu.ac.in')) {
+        await firebaseSignOut(auth);
+        throw new Error('Please use your KLU email address (@klu.ac.in)');
+      }
+
+      // Check if user document exists
+      let userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      let userData;
+
+      if (!userDoc.exists()) {
+        // Create new user document in Firestore
+        userData = {
+          email: firebaseUser.email,
+          name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+          role: 'student',
+          department: 'Computer Science',
+          createdAt: new Date().toISOString(),
+          enrolledSubjects: [],
+          studentId: firebaseUser.uid.substring(0, 10)
+        };
+        await setDoc(doc(db, 'users', firebaseUser.uid), userData);
+      } else {
+        userData = userDoc.data();
+      }
+
+      // Set the user state directly to avoid race condition with onAuthStateChanged
+      const appUser: User = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email!,
+        name: userData.name || firebaseUser.displayName || 'User',
+        role: 'student' as UserRole,
+        department: userData.department,
+        studentId: userData.studentId,
+        enrolledSubjects: userData.enrolledSubjects
+      };
+      setUser(appUser);
+      setIsAuthenticated(true);
+
+      return true;
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        return false;
+      }
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      // Clear mock user
+      localStorage.removeItem('mockUser');
+
+      // Sign out from Firebase (for students)
+      if (auth.currentUser) {
+        await firebaseSignOut(auth);
+      }
+
+      setUser(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, loginWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );

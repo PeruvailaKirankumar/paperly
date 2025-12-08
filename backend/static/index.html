@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paperly - Professional Question Paper Generator</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #475569;
+            --accent-color: #8b5cf6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-input: #f1f5f9;
+            
+            --text-main: #1e293b;
+            --text-secondary: #64748b;
+            --text-light: #94a3b8;
+            
+            --border-color: #e2e8f0;
+            --border-focus: #bfdbfe;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+            
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .text-center { text-align: center; }
+        .w-full { width: 100%; }
+
+        /* Layout */
+        .navbar {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 0.75rem 0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text-main);
+        }
+
+        .logo-icon {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            font-size: 1.1rem;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .main-content {
+            padding: 2rem 0;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4 {
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .page-header {
+            text-center: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-title {
+            font-size: 2.25rem;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.025em;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.625rem 1.25rem;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: white;
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            border-color: var(--text-light);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .btn-ghost:hover {
+            background-color: var(--bg-input);
+            color: var(--primary-color);
+        }
+
+        /* Tabs */
+        .tabs-container {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 0.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            display: inline-flex;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            background: none;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-color);
+            background-color: var(--bg-body);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+
+        /* Cards & Panels */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            padding: 1.5rem;
+            transition: box-shadow 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 1.1rem;
+            height: 1.1rem;
+            accent-color: var(--primary-color);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            background-color: var(--bg-body);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Question Types Grid */
+        .question-types-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .q-type-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .q-type-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .q-type-vsa::before { background-color: var(--success-color); }
+        .q-type-sa::before { background-color: var(--warning-color); }
+        .q-type-la::before { background-color: var(--danger-color); }
+
+        .q-type-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        /* Bloom's Taxonomy */
+        .bloom-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .bloom-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .bloom-item {
+            text-align: center;
+            padding: 0.75rem 0.5rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+        }
+
+        .bloom-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .bloom-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .bloom-input {
+            width: 100%;
+            text-align: center;
+            padding: 0.25rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+        }
+
+        .bloom-remember { border-top: 3px solid #eab308; }
+        .bloom-understand { border-top: 3px solid #3b82f6; }
+        .bloom-apply { border-top: 3px solid #10b981; }
+        .bloom-analyze { border-top: 3px solid #ec4899; }
+        .bloom-evaluate { border-top: 3px solid #a855f7; }
+        .bloom-create { border-top: 3px solid #f97316; }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: var(--bg-body);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(37, 99, 235, 0.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+
+        /* Loading Overlay */
+        #loadingOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            border-left: 4px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            z-index: 100;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Paper Preview */
+        .paper-preview {
+            background: white;
+            padding: 3rem;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+            min-height: 600px;
+            border: 1px solid var(--border-color);
+        }
+        
+        /* About Section */
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .about-card {
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+        }
+        
+        .about-card h4 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        .about-card ul {
+            list-style: none;
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .about-card li {
+            margin-bottom: 0.25rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-content">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <span>Paperly</span>
+            </div>
+            <div class="nav-actions">
+                <button id="viewDocsBtn" class="btn btn-secondary">
+                    <i class="fas fa-folder-open"></i>
+                    <span style="margin-left: 0.5rem;">Documents</span>
+                </button>
+                <button id="generateBtn" class="btn btn-primary">
+                    <i class="fas fa-magic"></i>
+                    <span style="margin-left: 0.5rem;">Generate</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container main-content">
+        
+        <!-- Header -->
+        <header class="page-header">
+            <h1 class="page-title">AI Question Paper Generator</h1>
+            <p class="page-subtitle">Create balanced, professional question papers aligned with Bloom's Taxonomy in seconds.</p>
+        </header>
+
+        <!-- Tabs -->
+        <div class="tabs-container">
+            <button class="tab-btn active" data-tab="generate">
+                <i class="fas fa-magic"></i> Generate Paper
+            </button>
+            <button class="tab-btn" data-tab="documents">
+                <i class="fas fa-folder-open"></i> Documents
+            </button>
+            <button class="tab-btn" data-tab="about">
+                <i class="fas fa-info-circle"></i> About Bloom's
+            </button>
+        </div>
+
+        <!-- Generate Tab -->
+        <div id="generateTab" class="tab-content">
+            <div class="grid-layout">
+                
+                <!-- Left Column: Configuration -->
+                <div class="config-panel">
+                    <div class="card">
+                        <h3 class="mb-4"><i class="fas fa-sliders-h" style="color: var(--primary-color); margin-right: 0.5rem;"></i> Configuration</h3>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="subjectInput">Subject</label>
+                            <input type="text" id="subjectInput" class="form-control" placeholder="e.g. Computer Science">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="topicInput">Specific Topic</label>
+                            <textarea id="topicInput" class="form-control" placeholder="e.g. Data Structures, Algorithms..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="difficultySelect">Difficulty Level</label>
+                            <select id="difficultySelect" class="form-control">
+                                <option value="easy">Easy</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="hard">Hard</option>
+                                <option value="mixed">Mixed</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" id="useContextToggle" checked>
+                                <span>Use uploaded documents as context</span>
+                            </label>
+                        </div>
+
+                        <button id="generatePaperBtn" class="btn btn-primary w-full" style="padding: 0.875rem;">
+                            <i class="fas fa-wand-magic-sparkles"></i>
+                            <span style="margin-left: 0.5rem;">Generate Paper</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Column: Distribution -->
+                <div class="distribution-panel">
+                    <div class="card">
+                        <h3 class="mb-6"><i class="fas fa-chart-pie" style="color: var(--primary-color); margin-right: 0.5rem;"></i> Question Distribution</h3>
+
+                        <!-- Question Types -->
+                        <div class="question-types-grid">
+                            <!-- VSA -->
+                            <div class="q-type-card q-type-vsa">
+                                <div class="q-type-header">
+                                    <i class="fas fa-bolt" style="color: var(--success-color);"></i>
+                                    <span>Very Short Answers</span>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Count</label>
+                                    <input type="number" id="vsaCount" class="form-control" value="5" min="0">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label">Marks</label>
+                                    <input type="number" id="vsaMarks" class="form-control" value="2" min="1">
+                                </div>
+                            </div>
+
+                            <!-- SA -->
+                            <div class="q-type-card q-type-sa">
+                                <div class="q-type-header">
+                                    <i class="fas fa-align-left" style="color: var(--warning-color);"></i>
+                                    <span>Short Answers</span>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Count</label>
+                                    <input type="number" id="saCount" class="form-control" value="3" min="0">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label">Marks</label>
+                                    <input type="number" id="saMarks" class="form-control" value="5" min="1">
+                                </div>
+                            </div>
+
+                            <!-- LA -->
+                            <div class="q-type-card q-type-la">
+                                <div class="q-type-header">
+                                    <i class="fas fa-align-justify" style="color: var(--danger-color);"></i>
+                                    <span>Long Answers</span>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Count</label>
+                                    <input type="number" id="laCount" class="form-control" value="2" min="0">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label">Marks</label>
+                                    <input type="number" id="laMarks" class="form-control" value="10" min="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bloom's Taxonomy -->
+                        <div class="mb-6">
+                            <h4 class="mb-4">Bloom's Taxonomy Distribution (%)</h4>
+                            <div class="bloom-grid">
+                                <div class="bloom-item bloom-remember">
+                                    <span class="bloom-label">Remember</span>
+                                    <input type="number" id="bloomRemember" class="bloom-input" value="20">
+                                </div>
+                                <div class="bloom-item bloom-understand">
+                                    <span class="bloom-label">Understand</span>
+                                    <input type="number" id="bloomUnderstand" class="bloom-input" value="20">
+                                </div>
+                                <div class="bloom-item bloom-apply">
+                                    <span class="bloom-label">Apply</span>
+                                    <input type="number" id="bloomApply" class="bloom-input" value="20">
+                                </div>
+                                <div class="bloom-item bloom-analyze">
+                                    <span class="bloom-label">Analyze</span>
+                                    <input type="number" id="bloomAnalyze" class="bloom-input" value="20">
+                                </div>
+                                <div class="bloom-item bloom-evaluate">
+                                    <span class="bloom-label">Evaluate</span>
+                                    <input type="number" id="bloomEvaluate" class="bloom-input" value="10">
+                                </div>
+                                <div class="bloom-item bloom-create">
+                                    <span class="bloom-label">Create</span>
+                                    <input type="number" id="bloomCreate" class="bloom-input" value="10">
+                                </div>
+                            </div>
+                            <div class="text-center text-sm text-secondary">
+                                Total: <span id="bloomTotal" style="font-weight: 700;">100</span>%
+                            </div>
+                        </div>
+
+                        <!-- Additional Instructions -->
+                        <div class="form-group">
+                            <label class="form-label">Additional Instructions</label>
+                            <textarea id="instructionsInput" class="form-control" placeholder="Any specific requirements..."></textarea>
+                        </div>
+
+                        <!-- Summary Stats -->
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Questions</span>
+                                <span class="stat-value" id="totalQuestions">10</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Marks</span>
+                                <span class="stat-value" id="totalMarks">40</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Duration</span>
+                                <span class="stat-value" id="estimatedTime">90 min</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Difficulty</span>
+                                <span class="stat-value" id="difficultyDisplay">Medium</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents Tab -->
+        <div id="documentsTab" class="tab-content hidden">
+            <div class="card">
+                <h3 class="mb-6">Upload Context Documents</h3>
+                
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt,.pptx" class="hidden">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h4 class="mb-2">Drop files here or click to upload</h4>
+                    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Supported: PDF, DOCX, TXT, PPTX</p>
+                    <button class="btn btn-primary">Choose Files</button>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <h4 class="mb-4">Uploaded Documents</h4>
+                    <div id="documentsList">
+                        <!-- JS will populate this -->
+                        <div class="text-center" style="padding: 2rem; color: var(--text-light);">
+                            <i class="fas fa-folder-open" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>No documents uploaded yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Tab -->
+        <div id="aboutTab" class="tab-content hidden">
+            <div class="card">
+                <h3 class="mb-6">About Bloom's Taxonomy</h3>
+                <p class="mb-6" style="color: var(--text-secondary); max-width: 800px;">
+                    Bloom's Taxonomy is a hierarchical framework for categorizing educational learning objectives into levels of complexity and specificity.
+                </p>
+
+                <div class="about-grid">
+                    <div class="about-card bloom-remember">
+                        <h4><i class="fas fa-brain"></i> Remember</h4>
+                        <p>Recall facts and basic concepts</p>
+                        <ul><li>List, define, identify</li><li>Name, recall, recognize</li></ul>
+                    </div>
+                    <div class="about-card bloom-understand">
+                        <h4><i class="fas fa-lightbulb"></i> Understand</h4>
+                        <p>Explain ideas or concepts</p>
+                        <ul><li>Describe, explain</li><li>Discuss, summarize</li></ul>
+                    </div>
+                    <div class="about-card bloom-apply">
+                        <h4><i class="fas fa-cogs"></i> Apply</h4>
+                        <p>Use information in new situations</p>
+                        <ul><li>Solve, demonstrate</li><li>Implement, use</li></ul>
+                    </div>
+                    <div class="about-card bloom-analyze">
+                        <h4><i class="fas fa-microscope"></i> Analyze</h4>
+                        <p>Draw connections among ideas</p>
+                        <ul><li>Differentiate, organize</li><li>Compare, examine</li></ul>
+                    </div>
+                    <div class="about-card bloom-evaluate">
+                        <h4><i class="fas fa-gavel"></i> Evaluate</h4>
+                        <p>Justify a stand or decision</p>
+                        <ul><li>Judge, critique</li><li>Assess, validate</li></ul>
+                    </div>
+                    <div class="about-card bloom-create">
+                        <h4><i class="fas fa-paint-brush"></i> Create</h4>
+                        <p>Produce new or original work</p>
+                        <ul><li>Design, construct</li><li>Develop, produce</li></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generated Paper View -->
+        <div id="generatedPaper" class="hidden" style="margin-top: 2rem;">
+            <div class="card">
+                <div class="flex justify-between items-center mb-6">
+                    <h3>Generated Question Paper</h3>
+                    <div class="flex gap-2">
+                        <button id="copyBtn" class="btn btn-secondary"><i class="fas fa-copy"></i> Copy</button>
+                        <button id="downloadBtn" class="btn btn-primary"><i class="fas fa-download"></i> Download</button>
+                        <button id="regenerateBtn" class="btn btn-secondary"><i class="fas fa-redo"></i> Regenerate</button>
+                    </div>
+                </div>
+                <div id="paperContent" class="paper-preview">
+                    <!-- Content goes here -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden">
+        <div class="spinner"></div>
+        <h3>Generating Paper...</h3>
+        <p style="color: var(--text-secondary);">This may take a moment</p>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden">
+        <div id="toastIcon"></div>
+        <div id="toastMessage"></div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paperly Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .btn { background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Paperly Frontend Test</h1>
+        <p>This is a test page to verify static file serving is working.</p>
+
+        <h2>Tests:</h2>
+        <ul>
+            <li>✅ HTML file serving</li>
+            <li>❓ CSS styling (inline)</li>
+            <li>❓ JavaScript functionality</li>
+        </ul>
+
+        <button class="btn" onclick="testAPI()">Test API Connection</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        console.log('JavaScript is working!');
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('result').innerHTML = '<p style="color: green;">✅ JavaScript loaded successfully!</p>';
+        });
+
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing API connection...</p>';
+
+            try {
+                const response = await fetch('/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<p style="color: green;">✅ API Connected: ${data.status}</p>`;
+                } else {
+                    resultDiv.innerHTML = `<p style="color: red;">❌ API Error: ${response.status}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">❌ Connection Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

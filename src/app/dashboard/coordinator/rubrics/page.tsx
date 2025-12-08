@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/layouts/dashboard-layout';
 import { ProtectedRoute } from '@/lib/auth/protected-route';
@@ -12,34 +12,38 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Settings, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
   Copy,
   Eye,
   BarChart3,
   Upload,
   BookOpen,
   Zap,
-  Users
+  Users,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
+import { rubricService, subjectService, Rubric, Subject } from '@/lib/firebase/firestore';
 
-// Mock rubrics data
 const mockRubrics = [
   {
-    id: '1',
+    id: 'rub_001',
     subject: 'Data Structures',
     totalMarks: 100,
     duration: '3 hours',
+    status: 'active',
+    lastUsed: '2025-12-01',
     bloomDistribution: {
       remember: 20,
-      understand: 25,
-      apply: 25,
-      analyze: 15,
+      understand: 30,
+      apply: 30,
+      analyze: 10,
       evaluate: 10,
-      create: 5
+      create: 0
     },
     difficultyDistribution: {
       easy: 30,
@@ -47,39 +51,35 @@ const mockRubrics = [
       hard: 20
     },
     sectionFormat: [
-      { name: 'Part A - MCQ', marks: 20, questionCount: 20, instructions: 'Choose the correct answer' },
-      { name: 'Part B - Short Answer', marks: 30, questionCount: 6, instructions: 'Answer any 6 questions' },
-      { name: 'Part C - Long Answer', marks: 50, questionCount: 3, instructions: 'Answer all questions' }
-    ],
-    createdDate: '2024-03-01',
-    lastUsed: '2024-03-15',
-    status: 'active'
+      { name: 'Section A', marks: 20, questionCount: 10, instructions: 'Answer all questions. Each carries 2 marks.' },
+      { name: 'Section B', marks: 50, questionCount: 5, instructions: 'Answer any 5 questions. Each carries 10 marks.' },
+      { name: 'Section C', marks: 30, questionCount: 2, instructions: 'Answer any 2 questions. Each carries 15 marks.' }
+    ]
   },
   {
-    id: '2',
+    id: 'rub_002',
     subject: 'Database Systems',
     totalMarks: 100,
     duration: '3 hours',
+    status: 'active',
+    lastUsed: '2025-11-20',
     bloomDistribution: {
-      remember: 15,
-      understand: 30,
-      apply: 30,
-      analyze: 15,
-      evaluate: 7,
-      create: 3
+      remember: 30,
+      understand: 40,
+      apply: 20,
+      analyze: 10,
+      evaluate: 0,
+      create: 0
     },
     difficultyDistribution: {
-      easy: 25,
-      medium: 55,
+      easy: 40,
+      medium: 40,
       hard: 20
     },
     sectionFormat: [
-      { name: 'Section I - Objective', marks: 25, questionCount: 25, instructions: 'Choose the correct answer' },
-      { name: 'Section II - Descriptive', marks: 75, questionCount: 5, instructions: 'Answer all questions' }
-    ],
-    createdDate: '2024-02-28',
-    lastUsed: '2024-03-12',
-    status: 'active'
+      { name: 'Part A', marks: 40, questionCount: 20, instructions: 'MCQs' },
+      { name: 'Part B', marks: 60, questionCount: 6, instructions: 'Descriptive' }
+    ]
   }
 ];
 
@@ -88,38 +88,38 @@ function CoordinatorSidebar() {
     <div className="p-6">
       <nav className="space-y-2">
         <Button variant="ghost" className="w-full justify-start" asChild>
-          <a href="/dashboard/coordinator">
+          <Link href="/dashboard/coordinator">
             <BarChart3 className="mr-2 h-4 w-4" />
             Dashboard
-          </a>
+          </Link>
         </Button>
         <Button variant="default" className="w-full justify-start">
           <Settings className="mr-2 h-4 w-4" />
           Rubrics Management
         </Button>
         <Button variant="ghost" className="w-full justify-start" asChild>
-          <a href="/dashboard/coordinator/context">
+          <Link href="/dashboard/coordinator/context">
             <Upload className="mr-2 h-4 w-4" />
             RAG Context
-          </a>
+          </Link>
         </Button>
         <Button variant="ghost" className="w-full justify-start" asChild>
-          <a href="/dashboard/coordinator/question-bank">
+          <Link href="/dashboard/coordinator/question-bank">
             <BookOpen className="mr-2 h-4 w-4" />
             Question Bank
-          </a>
+          </Link>
         </Button>
         <Button variant="ghost" className="w-full justify-start" asChild>
-          <a href="/dashboard/coordinator/generate">
+          <Link href="/dashboard/coordinator/generate">
             <Zap className="mr-2 h-4 w-4" />
             Generate Papers
-          </a>
+          </Link>
         </Button>
         <Button variant="ghost" className="w-full justify-start" asChild>
-          <a href="/dashboard/coordinator/faculty">
+          <Link href="/dashboard/coordinator/faculty">
             <Users className="mr-2 h-4 w-4" />
             Faculty Assignment
-          </a>
+          </Link>
         </Button>
       </nav>
     </div>
@@ -340,7 +340,7 @@ export default function RubricsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {mockRubrics.filter(r => new Date(r.lastUsed) > new Date(Date.now() - 7*24*60*60*1000)).length}
+                  {mockRubrics.filter(r => new Date(r.lastUsed) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   This week

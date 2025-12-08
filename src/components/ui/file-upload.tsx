@@ -4,10 +4,12 @@ import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Upload, File, X, CheckCircle } from 'lucide-react';
+import { Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { apiClient } from '@/lib/api';
 
 interface FileUploadProps {
-  onUpload: (files: File[]) => void;
+  onUpload?: (files: File[]) => void;
+  onUploadComplete?: (result: any) => void;
   acceptedFileTypes?: string;
   maxFileSize?: number; // in MB
   multiple?: boolean;
@@ -19,6 +21,7 @@ interface UploadedFile {
   progress: number;
   status: 'uploading' | 'completed' | 'error';
   id: string;
+  error?: string;
 }
 
 export function FileUpload({ 
@@ -59,7 +62,7 @@ export function FileUpload({
     return true;
   };
 
-  const processFiles = (files: FileList) => {
+  const processFiles = async (files: FileList) => {
     const validFiles: File[] = [];
     const newUploadedFiles: UploadedFile[] = [];
 
@@ -77,39 +80,59 @@ export function FileUpload({
 
     if (validFiles.length > 0) {
       setUploadedFiles(prev => [...prev, ...newUploadedFiles]);
-      onUpload(validFiles);
+      onUpload?.(validFiles);
 
-      // Simulate upload progress
-      newUploadedFiles.forEach(uploadedFile => {
-        simulateUploadProgress(uploadedFile.id);
-      });
+      // Upload files to backend
+      for (const uploadedFile of newUploadedFiles) {
+        await uploadFileToBackend(uploadedFile);
+      }
     }
   };
 
-  const simulateUploadProgress = (fileId: string) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 30;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
+  const uploadFileToBackend = async (uploadedFile: UploadedFile) => {
+    try {
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
         setUploadedFiles(prev =>
           prev.map(file =>
-            file.id === fileId
+            file.id === uploadedFile.id && file.status === 'uploading'
+              ? { ...file, progress: Math.min(file.progress + Math.random() * 20, 90) }
+              : file
+          )
+        );
+      }, 500);
+
+      const result = await apiClient.uploadDocument(uploadedFile.file);
+
+      clearInterval(progressInterval);
+
+      if (result.error) {
+        setUploadedFiles(prev =>
+          prev.map(file =>
+            file.id === uploadedFile.id
+              ? { ...file, status: 'error', error: result.error }
+              : file
+          )
+        );
+      } else if (result.data) {
+        setUploadedFiles(prev =>
+          prev.map(file =>
+            file.id === uploadedFile.id
               ? { ...file, progress: 100, status: 'completed' }
               : file
           )
         );
-      } else {
-        setUploadedFiles(prev =>
-          prev.map(file =>
-            file.id === fileId
-              ? { ...file, progress }
-              : file
-          )
-        );
+        onUploadComplete?.(result.data);
       }
-    }, 200);
+    } catch (error) {
+      setUploadedFiles(prev =>
+        prev.map(file =>
+          file.id === uploadedFile.id
+            ? { ...file, status: 'error', error: error instanceof Error ? error.message : 'Upload failed' }
+            : file
+        )
+      );
+    }
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -208,6 +231,9 @@ export function FileUpload({
                       {uploadedFile.status === 'completed' && (
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       )}
+                      {uploadedFile.status === 'error' && (
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -227,6 +253,11 @@ export function FileUpload({
                   <p className="text-xs text-gray-500 mt-1">
                     {formatFileSize(uploadedFile.file.size)}
                   </p>
+                  {uploadedFile.status === 'error' && uploadedFile.error && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {uploadedFile.error}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}

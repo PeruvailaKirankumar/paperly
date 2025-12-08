@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paperly - Question Paper Generator</title>
+
+    <!-- Tailwind CSS v4 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#3b82f6',
+                        'primary-dark': '#2563eb',
+                        'secondary': '#8b5cf6',
+                        'success': '#10b981',
+                        'warning': '#f59e0b',
+                        'error': '#ef4444',
+                        'gray-50': '#f9fafb',
+                        'gray-100': '#f3f4f6',
+                        'gray-200': '#e5e7eb',
+                        'gray-300': '#d1d5db',
+                        'gray-400': '#9ca3af',
+                        'gray-500': '#6b7280',
+                        'gray-600': '#4b5563',
+                        'gray-700': '#374151',
+                        'gray-800': '#1f2937',
+                        'gray-900': '#111827',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom animations and transitions */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-up {
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .hover-scale {
+            transition: transform 0.2s ease;
+        }
+
+        .hover-scale:hover {
+            transform: scale(1.02);
+        }
+
+        /* Bloom's taxonomy colors */
+        .bloom-remember { background-color: #fef3c7; border-color: #f59e0b; }
+        .bloom-understand { background-color: #dbeafe; border-color: #3b82f6; }
+        .bloom-apply { background-color: #d1fae5; border-color: #10b981; }
+        .bloom-analyze { background-color: #fce7f3; border-color: #ec4899; }
+        .bloom-evaluate { background-color: #e9d5ff; border-color: #a855f7; }
+        .bloom-create { background-color: #fed7aa; border-color: #ea580c; }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-graduation-cap text-primary text-2xl"></i>
+                        <h1 class="text-xl font-bold text-gray-900">Paperly</h1>
+                    </div>
+                    <span class="ml-2 text-sm text-gray-500 hidden sm:inline">Question Paper Generator</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="viewDocsBtn" class="text-gray-600 hover:text-primary transition-colors">
+                        <i class="fas fa-folder-open mr-2"></i>
+                        <span class="hidden sm:inline">Documents</span>
+                    </button>
+                    <button id="generateBtn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors">
+                        <i class="fas fa-magic mr-2"></i>
+                        Generate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">AI-Powered Question Paper Generator</h2>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Generate customizable question papers following Bloom's taxonomy with AI-powered content analysis
+            </p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="bg-white rounded-lg shadow-md mb-8">
+            <div class="border-b border-gray-200">
+                <nav class="flex -mb-px">
+                    <button class="tab-btn active px-6 py-3 border-b-2 border-primary text-primary font-medium" data-tab="generate">
+                        <i class="fas fa-magic mr-2"></i>
+                        Generate Paper
+                    </button>
+                    <button class="tab-btn px-6 py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium" data-tab="documents">
+                        <i class="fas fa-folder-open mr-2"></i>
+                        Documents
+                    </button>
+                    <button class="tab-btn px-6 py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium" data-tab="about">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        About Bloom's Taxonomy
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Generate Paper Tab -->
+        <div id="generateTab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Configuration Panel -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-lg shadow-md p-6 sticky top-24">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-cog mr-2 text-primary"></i>
+                            Configuration
+                        </h3>
+
+                        <!-- Subject Input -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-book mr-1"></i>
+                                Subject
+                            </label>
+                            <input type="text" id="subjectInput" placeholder="e.g., Data Structures"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+
+                        <!-- Topic Input -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-lightbulb mr-1"></i>
+                                Specific Topic (Optional)
+                            </label>
+                            <textarea id="topicInput" placeholder="e.g., Binary Search Trees, Time Complexity"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                      rows="2"></textarea>
+                        </div>
+
+                        <!-- Difficulty Level -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-chart-line mr-1"></i>
+                                Difficulty Level
+                            </label>
+                            <select id="difficultySelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="easy">Easy</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="hard">Hard</option>
+                                <option value="mixed">Mixed</option>
+                            </select>
+                        </div>
+
+                        <!-- Use Context Toggle -->
+                        <div class="mb-6">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="useContextToggle" checked class="mr-2">
+                                <span class="text-sm font-medium text-gray-700">
+                                    <i class="fas fa-database mr-1"></i>
+                                    Use uploaded documents as context
+                                </span>
+                            </label>
+                        </div>
+
+                        <button id="generatePaperBtn" class="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary-dark transition-colors font-medium">
+                            <i class="fas fa-wand-magic-sparkles mr-2"></i>
+                            Generate Question Paper
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Question Distribution -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                            <i class="fas fa-chart-pie mr-2 text-primary"></i>
+                            Question Distribution
+                        </h3>
+
+                        <!-- Question Types -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <!-- Very Short Answers -->
+                            <div class="border-2 border-gray-200 rounded-lg p-4 hover-scale">
+                                <div class="flex items-center mb-3">
+                                    <i class="fas fa-circle text-xs text-success mr-2"></i>
+                                    <h4 class="font-semibold text-gray-900">Very Short Answers</h4>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-sm text-gray-600">Number of Questions</label>
+                                    <input type="number" id="vsaCount" min="0" max="20" value="5"
+                                           class="w-full mt-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-sm text-gray-600">Marks per Question</label>
+                                    <input type="number" id="vsaMarks" min="1" max="5" value="2"
+                                           class="w-full mt-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    2-5 minutes per question
+                                </div>
+                            </div>
+
+                            <!-- Short Answers -->
+                            <div class="border-2 border-gray-200 rounded-lg p-4 hover-scale">
+                                <div class="flex items-center mb-3">
+                                    <i class="fas fa-circle text-xs text-warning mr-2"></i>
+                                    <h4 class="font-semibold text-gray-900">Short Answers</h4>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-sm text-gray-600">Number of Questions</label>
+                                    <input type="number" id="saCount" min="0" max="20" value="3"
+                                           class="w-full mt-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-sm text-gray-600">Marks per Question</label>
+                                    <input type="number" id="saMarks" min="1" max="10" value="5"
+                                           class="w-full mt-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    5-10 minutes per question
+                                </div>
+                            </div>
+
+                            <!-- Long Answers -->
+                            <div class="border-2 border-gray-200 rounded-lg p-4 hover-scale">
+                                <div class="flex items-center mb-3">
+                                    <i class="fas fa-circle text-xs text-error mr-2"></i>
+                                    <h4 class="font-semibold text-gray-900">Long Answers</h4>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-sm text-gray-600">Number of Questions</label>
+                                    <input type="number" id="laCount" min="0" max="20" value="2"
+                                           class="w-full mt-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-sm text-gray-600">Marks per Question</label>
+                                    <input type="number" id="laMarks" min="1" max="20" value="10"
+                                           class="w-full mt-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    10-20 minutes per question
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bloom's Taxonomy Distribution -->
+                        <div class="mb-6">
+                            <h4 class="font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-brain mr-2 text-secondary"></i>
+                                Bloom's Taxonomy Distribution
+                            </h4>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                                <div class="bloom-remember border rounded-lg p-3 text-center">
+                                    <div class="text-xs font-semibold mb-1">Remember</div>
+                                    <input type="number" id="bloomRemember" min="0" max="100" value="20"
+                                           class="w-full px-2 py-1 text-sm border border-yellow-400 rounded focus:ring-2 focus:ring-yellow-400">
+                                    <div class="text-xs mt-1">%</div>
+                                </div>
+                                <div class="bloom-understand border rounded-lg p-3 text-center">
+                                    <div class="text-xs font-semibold mb-1">Understand</div>
+                                    <input type="number" id="bloomUnderstand" min="0" max="100" value="20"
+                                           class="w-full px-2 py-1 text-sm border border-blue-400 rounded focus:ring-2 focus:ring-blue-400">
+                                    <div class="text-xs mt-1">%</div>
+                                </div>
+                                <div class="bloom-apply border rounded-lg p-3 text-center">
+                                    <div class="text-xs font-semibold mb-1">Apply</div>
+                                    <input type="number" id="bloomApply" min="0" max="100" value="20"
+                                           class="w-full px-2 py-1 text-sm border border-green-400 rounded focus:ring-2 focus:ring-green-400">
+                                    <div class="text-xs mt-1">%</div>
+                                </div>
+                                <div class="bloom-analyze border rounded-lg p-3 text-center">
+                                    <div class="text-xs font-semibold mb-1">Analyze</div>
+                                    <input type="number" id="bloomAnalyze" min="0" max="100" value="20"
+                                           class="w-full px-2 py-1 text-sm border border-pink-400 rounded focus:ring-2 focus:ring-pink-400">
+                                    <div class="text-xs mt-1">%</div>
+                                </div>
+                                <div class="bloom-evaluate border rounded-lg p-3 text-center">
+                                    <div class="text-xs font-semibold mb-1">Evaluate</div>
+                                    <input type="number" id="bloomEvaluate" min="0" max="100" value="10"
+                                           class="w-full px-2 py-1 text-sm border border-purple-400 rounded focus:ring-2 focus:ring-purple-400">
+                                    <div class="text-xs mt-1">%</div>
+                                </div>
+                                <div class="bloom-create border rounded-lg p-3 text-center">
+                                    <div class="text-xs font-semibold mb-1">Create</div>
+                                    <input type="number" id="bloomCreate" min="0" max="100" value="10"
+                                           class="w-full px-2 py-1 text-sm border border-orange-400 rounded focus:ring-2 focus:ring-orange-400">
+                                    <div class="text-xs mt-1">%</div>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-sm text-gray-600">
+                                Total: <span id="bloomTotal" class="font-semibold">100</span>%
+                            </div>
+                        </div>
+
+                        <!-- Additional Instructions -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-comment-alt mr-1"></i>
+                                Additional Instructions (Optional)
+                            </label>
+                            <textarea id="instructionsInput" placeholder="Any specific requirements for the AI generator..."
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                      rows="3"></textarea>
+                        </div>
+
+                        <!-- Paper Summary -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-900 mb-3">Paper Summary</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-600">Total Questions:</span>
+                                    <span id="totalQuestions" class="font-semibold ml-1">10</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600">Total Marks:</span>
+                                    <span id="totalMarks" class="font-semibold ml-1">40</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600">Duration:</span>
+                                    <span id="estimatedTime" class="font-semibold ml-1">1 hr 30 min</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600">Difficulty:</span>
+                                    <span id="difficultyDisplay" class="font-semibold ml-1">Medium</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents Tab -->
+        <div id="documentsTab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <!-- Upload Section -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-upload mr-2 text-primary"></i>
+                        Upload Context Documents
+                    </h3>
+
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-colors">
+                        <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt,.pptx" class="hidden">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-lg font-medium text-gray-900 mb-2">Drop files here or click to upload</p>
+                        <p class="text-sm text-gray-500 mb-4">
+                            Supported formats: PDF, DOCX, TXT, PPTX (Max 50MB each)
+                        </p>
+                        <button onclick="document.getElementById('fileInput').click()"
+                                class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors">
+                            <i class="fas fa-folder-open mr-2"></i>
+                            Choose Files
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Documents List -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-list mr-2 text-primary"></i>
+                        Uploaded Documents
+                    </h3>
+                    <div id="documentsList" class="space-y-3">
+                        <div class="text-center text-gray-500 py-8">
+                            <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
+                            <p>No documents uploaded yet</p>
+                            <p class="text-sm">Upload documents to enhance question generation</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Bloom's Taxonomy Tab -->
+        <div id="aboutTab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                    <i class="fas fa-brain mr-2 text-secondary"></i>
+                    About Bloom's Taxonomy
+                </h3>
+
+                <div class="prose max-w-none">
+                    <p class="text-gray-600 mb-6">
+                        Bloom's Taxonomy is a hierarchical framework for categorizing educational learning objectives
+                        into levels of complexity and specificity. Our AI generator uses this framework to create
+                        well-balanced question papers that test different cognitive skills.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bloom-remember border rounded-lg p-4">
+                            <h4 class="font-semibold mb-2">
+                                <i class="fas fa-brain mr-2"></i>Remember
+                            </h4>
+                            <p class="text-sm text-gray-700 mb-2">
+                                Recall facts and basic concepts
+                            </p>
+                            <ul class="text-xs text-gray-600">
+                                <li>• List, define, identify</li>
+                                <li>• Name, recall, recognize</li>
+                                <li>• Who, what, when, where</li>
+                            </ul>
+                        </div>
+
+                        <div class="bloom-understand border rounded-lg p-4">
+                            <h4 class="font-semibold mb-2">
+                                <i class="fas fa-lightbulb mr-2"></i>Understand
+                            </h4>
+                            <p class="text-sm text-gray-700 mb-2">
+                                Explain ideas or concepts
+                            </p>
+                            <ul class="text-xs text-gray-600">
+                                <li>• Describe, explain</li>
+                                <li>• Discuss, summarize</li>
+                                <li>• Compare, contrast</li>
+                            </ul>
+                        </div>
+
+                        <div class="bloom-apply border rounded-lg p-4">
+                            <h4 class="font-semibold mb-2">
+                                <i class="fas fa-cogs mr-2"></i>Apply
+                            </h4>
+                            <p class="text-sm text-gray-700 mb-2">
+                                Use information in new situations
+                            </p>
+                            <ul class="text-xs text-gray-600">
+                                <li>• Solve, demonstrate</li>
+                                <li>• Implement, use</li>
+                                <li>• Execute, carry out</li>
+                            </ul>
+                        </div>
+
+                        <div class="bloom-analyze border rounded-lg p-4">
+                            <h4 class="font-semibold mb-2">
+                                <i class="fas fa-microscope mr-2"></i>Analyze
+                            </h4>
+                            <p class="text-sm text-gray-700 mb-2">
+                                Draw connections among ideas
+                            </p>
+                            <ul class="text-xs text-gray-600">
+                                <li>• Differentiate, organize</li>
+                                <li>• Attribute, deconstruct</li>
+                                <li>• Compare, examine</li>
+                            </ul>
+                        </div>
+
+                        <div class="bloom-evaluate border rounded-lg p-4">
+                            <h4 class="font-semibold mb-2">
+                                <i class="fas fa-gavel mr-2"></i>Evaluate
+                            </h4>
+                            <p class="text-sm text-gray-700 mb-2">
+                                Justify a stand or decision
+                            </p>
+                            <ul class="text-xs text-gray-600">
+                                <li>• Judge, critique</li>
+                                <li>• Assess, validate</li>
+                                <li>• Rate, prioritize</li>
+                            </ul>
+                        </div>
+
+                        <div class="bloom-create border rounded-lg p-4">
+                            <h4 class="font-semibold mb-2">
+                                <i class="fas fa-paint-brush mr-2"></i>Create
+                            </h4>
+                            <p class="text-sm text-gray-700 mb-2">
+                                Produce new or original work
+                            </p>
+                            <ul class="text-xs text-gray-600">
+                                <li>• Design, construct</li>
+                                <li>• Develop, produce</li>
+                                <li>• Formulate, devise</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generated Paper Display -->
+        <div id="generatedPaper" class="hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-file-alt mr-2 text-primary"></i>
+                        Generated Question Paper
+                    </h3>
+                    <div class="flex space-x-2">
+                        <button id="copyBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-copy mr-2"></i>
+                            Copy
+                        </button>
+                        <button id="downloadBtn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors">
+                            <i class="fas fa-download mr-2"></i>
+                            Download
+                        </button>
+                        <button id="regenerateBtn" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-secondary-dark transition-colors">
+                            <i class="fas fa-redo mr-2"></i>
+                            Regenerate
+                        </button>
+                    </div>
+                </div>
+
+                <div id="paperContent" class="bg-gray-50 rounded-lg p-6">
+                    <!-- Generated content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p class="text-gray-700 font-medium">Generating question paper...</p>
+            <p class="text-sm text-gray-500 mt-1">This may take a moment</p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="hidden fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-sm z-50 fade-in">
+        <div class="flex items-center">
+            <div id="toastIcon" class="flex-shrink-0 mr-3"></div>
+            <div class="flex-1">
+                <p id="toastMessage" class="text-sm font-medium text-gray-900"></p>
+            </div>
+            <button onclick="hideToast()" class="ml-3 text-gray-400 hover:text-gray-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
