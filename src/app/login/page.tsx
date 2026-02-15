@@ -131,7 +131,7 @@ export default function LoginPage() {
                 <CardTitle className="text-2xl font-bold">
                   Paperly
                 </CardTitle>
-                <p className="text-xs text-gray-500 mt-1">KL University</p>
+                <p className="text-xs text-gray-500 mt-1">Kalasalingam Academy of Research and Education</p>
               </div>
             </div>
             <CardDescription>
